@@ -3,6 +3,8 @@ use std::str::FromStr;
 use std::thread::Thread;
 use std::time::Duration;
 
+use uuid::Uuid;
+
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use tokio;
@@ -277,6 +279,7 @@ async fn produce(brokers: String, topic: String, my_id: usize, m: usize) {
         .set("retries", "0")
         .set("batch.size", "16777216")
         .set("acks", "-1")
+        .set("compression.codec", "zstd")
         .create()
         .unwrap();
 
@@ -285,8 +288,8 @@ async fn produce(brokers: String, topic: String, my_id: usize, m: usize) {
     debug!("Producer {} sending", my_id);
 
     for i in 0..m {
-        let key = format!("{:#010x}", rand::thread_rng().next_u32() & 0x6ffff);
-        let sz = (rand::thread_rng().next_u32() & 0x7fff) as usize;
+        let key = format!("{}", Uuid::new_v4()); // format!("{:#010x}", rand::thread_rng().next_u32() & 0x6ffff);
+        let sz = 1024; // (rand::thread_rng().next_u32() & 0x7fff) as usize;
         let fut = producer.send(
             FutureRecord::to(&topic).key(&key).payload(&payload[0..sz]),
             Duration::from_millis(1000),
